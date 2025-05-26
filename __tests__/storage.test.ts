@@ -13,70 +13,89 @@ const mockTask: Task = {
 }
 
 describe("Storage Utils", () => {
+  let localStorageMock: any
+  let consoleErrorSpy: any
+
   beforeEach(() => {
-    // Clear localStorage mock before each test
-    localStorage.clear()
-    jest.clearAllMocks()
+    // Create fresh mocks for each test
+    localStorageMock = {
+      getItem: jest.fn(),
+      setItem: jest.fn(),
+      removeItem: jest.fn(),
+      clear: jest.fn(),
+    }
+
+    // Mock localStorage
+    Object.defineProperty(window, 'localStorage', {
+      value: localStorageMock,
+      writable: true,
+      configurable: true
+    })
+
+    // Mock console.error
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    jest.restoreAllMocks()
   })
 
   describe("loadTasks", () => {
     it("should return empty array when no tasks stored", () => {
-      localStorage.getItem = jest.fn().mockReturnValue(null)
+      localStorageMock.getItem.mockReturnValue(null)
+      
       const tasks = loadTasks()
+      
       expect(tasks).toEqual([])
+      expect(localStorageMock.getItem).toHaveBeenCalledWith("taskeasy-tasks")
     })
 
     it("should return parsed tasks from localStorage", () => {
       const storedTasks = [mockTask]
-      localStorage.getItem = jest.fn().mockReturnValue(JSON.stringify(storedTasks))
+      localStorageMock.getItem.mockReturnValue(JSON.stringify(storedTasks))
 
       const tasks = loadTasks()
+      
       expect(tasks).toEqual(storedTasks)
+      expect(localStorageMock.getItem).toHaveBeenCalledWith("taskeasy-tasks")
     })
 
     it("should return empty array on parse error", () => {
-      localStorage.getItem = jest.fn().mockReturnValue("invalid json")
-      const consoleSpy = jest.spyOn(console, "error").mockImplementation()
+      localStorageMock.getItem.mockReturnValue("invalid json")
 
       const tasks = loadTasks()
+      
       expect(tasks).toEqual([])
-      expect(consoleSpy).toHaveBeenCalled()
-
-      consoleSpy.mockRestore()
+      expect(consoleErrorSpy).toHaveBeenCalled()
     })
   })
 
   describe("saveTasks", () => {
     it("should save tasks to localStorage", () => {
       const tasks = [mockTask]
-      localStorage.setItem = jest.fn()
 
       saveTasks(tasks)
 
-      expect(localStorage.setItem).toHaveBeenCalledWith("taskeasy-tasks", JSON.stringify(tasks))
+      expect(localStorageMock.setItem).toHaveBeenCalledWith("taskeasy-tasks", JSON.stringify(tasks))
     })
 
     it("should handle save errors gracefully", () => {
       const tasks = [mockTask]
-      localStorage.setItem = jest.fn().mockImplementation(() => {
+      localStorageMock.setItem.mockImplementation(() => {
         throw new Error("Storage error")
       })
-      const consoleSpy = jest.spyOn(console, "error").mockImplementation()
 
       saveTasks(tasks)
 
-      expect(consoleSpy).toHaveBeenCalled()
-      consoleSpy.mockRestore()
+      expect(consoleErrorSpy).toHaveBeenCalled()
     })
   })
 
   describe("clearTasks", () => {
     it("should remove tasks from localStorage", () => {
-      localStorage.removeItem = jest.fn()
-
       clearTasks()
 
-      expect(localStorage.removeItem).toHaveBeenCalledWith("taskeasy-tasks")
+      expect(localStorageMock.removeItem).toHaveBeenCalledWith("taskeasy-tasks")
     })
   })
 })

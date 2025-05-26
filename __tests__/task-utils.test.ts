@@ -1,4 +1,4 @@
-import { describe, it, expect } from "@jest/globals"
+import { describe, it, expect, beforeEach } from "@jest/globals"
 import {
   sortTasksByPriority,
   filterTasksByStatus,
@@ -8,6 +8,10 @@ import {
   updateTask,
 } from "@/lib/task-utils"
 import type { Task } from "@/types/task"
+
+// Mock crypto.randomUUID for consistent testing
+const mockRandomUUID = jest.fn(() => 'test-uuid-123')
+global.crypto = { randomUUID: mockRandomUUID } as any
 
 // Mock tasks for testing
 const mockTasks: Task[] = [
@@ -41,6 +45,11 @@ const mockTasks: Task[] = [
 ]
 
 describe("Task Utils", () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+    mockRandomUUID.mockReturnValue('test-uuid-123')
+  })
+
   describe("sortTasksByPriority", () => {
     it("should sort tasks by priority (high to low)", () => {
       const sorted = sortTasksByPriority(mockTasks)
@@ -174,7 +183,7 @@ describe("Task Utils", () => {
 
       const task = createTask(taskData)
 
-      expect(task.id).toBeDefined()
+      expect(task.id).toBe('test-uuid-123')
       expect(task.title).toBe("New Task")
       expect(task.createdAt).toBeDefined()
       expect(task.updatedAt).toBeDefined()
